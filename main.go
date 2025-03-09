@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/dimfu/apron/parser"
 	"github.com/dimfu/apron/scanner"
 )
 
@@ -42,6 +43,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	scanner := scanner.New(source)
-	scanner.Scan()
+	scanner, err := scanner.New(source)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p, err := parser.New(scanner.Tokens)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(p)
 }

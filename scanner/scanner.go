@@ -9,25 +9,32 @@ import (
 )
 
 type Scanner struct {
-	tokens   []token.Token
+	Tokens   []token.Token
 	keywords map[string]token.Kind
 	source   []byte
+	start    int
 	current  int
 	line     int
 }
 
-func New(source []byte) *Scanner {
-	return &Scanner{
-		tokens:   []token.Token{},
+func New(source []byte) (*Scanner, error) {
+	scanner := &Scanner{
+		Tokens:   []token.Token{},
 		keywords: token.Keywords,
 		source:   source,
 		current:  0,
+		start:    0,
 		line:     1,
 	}
+	if err := scanner.scan(); err != nil {
+		return nil, err
+	}
+	return scanner, nil
 }
 
-func (s *Scanner) Scan() error {
+func (s *Scanner) scan() error {
 	for !s.isAtEnd() {
+		s.start = s.current
 		err := s.next()
 		if err != nil {
 			return err
@@ -66,14 +73,20 @@ func (s *Scanner) next() error {
 			}
 		}
 		break
+	case '-':
+		for s.peek() != '\n' && !s.isAtEnd() {
+			s.advance()
+		}
+		s.Tokens = append(s.Tokens, token.Token{
+			Kind:    token.INSTRUCTION,
+			Literal: string(s.source[s.start+1 : s.current-1]),
+		})
 	case ' ':
 	case '\r':
 	case '\t':
 		break
 	case '\n':
 		s.line++
-		break
-	case '"':
 		break
 	}
 
@@ -100,7 +113,7 @@ func (s *Scanner) metadata() error {
 		return err
 	}
 
-	s.tokens = append(s.tokens, token.Token{
+	s.Tokens = append(s.Tokens, token.Token{
 		Kind:    kind,
 		Literal: parts[1],
 	})
