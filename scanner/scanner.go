@@ -3,7 +3,6 @@ package scanner
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/dimfu/apron/token"
@@ -27,22 +26,46 @@ func New(source []byte) *Scanner {
 	}
 }
 
-func (s *Scanner) Scan() {
+func (s *Scanner) Scan() error {
 	for !s.isAtEnd() {
-		s.next()
+		err := s.next()
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (s *Scanner) next() {
+func (s *Scanner) next() error {
 	c := s.advance()
 	switch c {
 	case '>':
 		if s.match('>') && !s.isAtEnd() {
 			err := s.metadata()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		}
+	case '/':
+		if s.match('/') {
+			for s.peek() != '\n' && !s.isAtEnd() {
+				s.advance()
+			}
+		} else if s.match('*') {
+			for !s.isAtEnd() {
+				if s.peek() == '*' && s.peekNext() == '/' {
+					s.advance()
+					s.advance()
+					break
+				}
+				s.advance()
+			}
+
+			if s.isAtEnd() {
+				return errors.New("comment not properly closed")
+			}
+		}
+		break
 	case ' ':
 	case '\r':
 	case '\t':
@@ -53,6 +76,8 @@ func (s *Scanner) next() {
 	case '"':
 		break
 	}
+
+	return nil
 }
 
 func (s *Scanner) metadata() error {
@@ -96,6 +121,20 @@ func (s *Scanner) newlineIdx() int {
 		idx += s.current
 	}
 	return idx
+}
+
+func (s *Scanner) peek() byte {
+	if s.isAtEnd() {
+		return 0
+	}
+	return s.source[s.current]
+}
+
+func (s *Scanner) peekNext() byte {
+	if s.current+1 >= len(s.source) {
+		return 0
+	}
+	return s.source[s.current+1]
 }
 
 func (s *Scanner) match(target byte) bool {
