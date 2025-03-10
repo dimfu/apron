@@ -17,6 +17,10 @@ func TestIngredients(t *testing.T) {
 			Kind:    token.INSTRUCTION,
 			Literal: "To the &{wok} add {red pepper}, {chilli}, {garlic} and {sweet corn}(160 g) - cook for another t{4 minutes}",
 		},
+		{
+			Kind:    token.INSTRUCTION,
+			Literal: "To the empty &{wok}, add {butter}(60 g) (heat until melted), once melted add the plain {flour}(30g) and mix until golden for t{3 minutes}.",
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -25,5 +29,5 @@ func TestIngredients(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(recipe.Ingredients)
+	fmt.Println(recipe.Materials)
 }

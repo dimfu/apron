@@ -1,7 +1,6 @@
 package scanner
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -62,6 +61,4 @@ ya it does work
 			t.Fatalf("should expecting %v as token but got %v", tests[i].expectedKind, scanner.Tokens[i])
 		}
 	}
-
-	fmt.Println(scanner.Tokens)
 }
