@@ -62,9 +62,6 @@ func (p *Parser) ingredients() error {
 			if input[i] == '{' && (input[i-1] != '&' && input[i-1] != 't') {
 				start := i + 1
 				end := strings.Index(string(input[start:]), "}") + start
-				if end == -1 {
-					return errors.New("unclosed {")
-				}
 				element := input[start:end]
 				i = end + 1
 
@@ -72,9 +69,6 @@ func (p *Parser) ingredients() error {
 				if i < len(input) && input[i] == '(' {
 					start = i + 1
 					end = strings.Index(string(input[start:]), ")") + start
-					if end == -1 {
-						return errors.New("unclosed )")
-					}
 					unitAmount.unit = input[start:end]
 					i = end + 1
 				}

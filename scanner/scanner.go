@@ -77,9 +77,32 @@ func (s *Scanner) next() error {
 		for s.peek() != '\n' && !s.isAtEnd() {
 			s.advance()
 		}
+
+		input := string(s.source[s.start+1 : s.current-1])
+		stack := []rune{}
+		for _, c := range input {
+			if c == '(' || c == '{' {
+				stack = append(stack, c)
+			} else if c == ')' || c == '}' {
+				if len(stack) == 0 {
+					return fmt.Errorf("unexpected closing parentheses at line %d\n", s.line)
+				}
+				top := stack[len(stack)-1]
+				if (top == '(' && c == ')') || (top == '{' && c == '}') {
+					stack = stack[:len(stack)-1]
+				} else {
+					return fmt.Errorf("mismatched parentheses at line %d\n", s.line)
+				}
+			}
+		}
+
+		if len(stack) != 0 {
+			return fmt.Errorf("missing closing parentheses at line %d", s.line)
+		}
+
 		s.Tokens = append(s.Tokens, token.Token{
 			Kind:    token.INSTRUCTION,
-			Literal: string(s.source[s.start+1 : s.current-1]),
+			Literal: input,
 		})
 	case ' ':
 	case '\r':
