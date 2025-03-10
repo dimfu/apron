@@ -1,11 +1,67 @@
 package parser
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/dimfu/apron/token"
 )
+
+func TestParseAmount(t *testing.T) {
+	tests := []struct {
+		amounts  string
+		expected *ingredient
+		hasError bool
+	}{
+		{
+			amounts:  "20g chocolate",
+			expected: &ingredient{amount: "20", rest: "g chocolate"},
+			hasError: false,
+		},
+		{
+			amounts:  "chocolate 20g",
+			expected: nil,
+			hasError: true,
+		},
+		{
+			amounts:  "20 g chocolate",
+			expected: &ingredient{amount: "20", rest: "g chocolate"},
+			hasError: false,
+		},
+		{
+			amounts:  "1.2g chocolate",
+			expected: &ingredient{amount: "1.2", rest: "g chocolate"},
+			hasError: false,
+		},
+		{
+			amounts:  ".5g of water",
+			expected: &ingredient{amount: ".5", rest: "g of water"},
+			hasError: false,
+		},
+		{
+			amounts:  "..5g of water",
+			expected: nil,
+			hasError: true,
+		},
+	}
+
+	for _, test := range tests {
+		res, err := parseAmount(test.amounts)
+		if test.hasError {
+			if err == nil {
+				t.Fatalf("expected error for input %s, but got none", test.amounts)
+			}
+		} else {
+			if err != nil {
+				t.Fatalf("unexpected error for input %s: %v", test.amounts, err)
+			}
+			if !reflect.DeepEqual(res, test.expected) {
+				t.Fatalf("%v should be %v", res, test.expected)
+			}
+		}
+
+	}
+}
 
 func TestIngredients(t *testing.T) {
 	p, err := New([]token.Token{
@@ -22,6 +78,42 @@ func TestIngredients(t *testing.T) {
 			Literal: "To the empty &{wok}, add {butter}(60 g) (heat until melted), once melted add the plain {flour}(30g) and mix until golden for t{3 minutes}.",
 		},
 	})
+
+	//map[butter:{60 g butter} curry powder:{2 tbsp curry powder} flour:{30 g flour} sweet corn:{160 g sweet corn}]
+	tests := []struct {
+		key      string
+		expected *ingredient
+	}{
+		{
+			key: "butter",
+			expected: &ingredient{
+				amount: "60",
+				rest:   "g butter",
+			},
+		},
+		{
+			key: "curry powder",
+			expected: &ingredient{
+				amount: "2",
+				rest:   "tbsp curry powder",
+			},
+		},
+		{
+			key: "flour",
+			expected: &ingredient{
+				amount: "30",
+				rest:   "g flour",
+			},
+		},
+		{
+			key: "sweet corn",
+			expected: &ingredient{
+				amount: "160",
+				rest:   "g sweet corn",
+			},
+		},
+	}
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,5 +121,14 @@ func TestIngredients(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(recipe.Materials)
+
+	for _, test := range tests {
+		ingredient, exists := recipe.Ingredients[test.key]
+		if !exists {
+			t.Fatalf("ingredient key %s should be exist in map", test.key)
+		}
+		if !reflect.DeepEqual(ingredient, *test.expected) {
+			t.Fatalf("ingredient %v should be %v", ingredient, test.expected)
+		}
+	}
 }
