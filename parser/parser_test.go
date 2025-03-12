@@ -1,11 +1,31 @@
 package parser
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/dimfu/apron/token"
 )
+
+func TestParseMetadata(t *testing.T) {
+	p, err := New([]token.Token{
+		{
+			Kind:    token.NAME,
+			Literal: "Curry",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recipe, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(recipe.Metadata)
+}
 
 func TestParseAmount(t *testing.T) {
 	tests := []struct {
@@ -63,6 +83,56 @@ func TestParseAmount(t *testing.T) {
 	}
 }
 
+func TestInstructions(t *testing.T) {
+	p, err := New([]token.Token{
+		{
+			Kind:    token.INSTRUCTION,
+			Literal: "Next, add {curry powder}(2 tbsp) and {garam masala}(1 tbsp) - cook for t{1 minute}.",
+		},
+		{
+			Kind:    token.INSTRUCTION,
+			Literal: "To the &{wok} add {red pepper}, {chilli}, {garlic} and {sweet corn}(160 g) - cook for another t{4 minutes}.",
+		},
+		{
+			Kind:    token.INSTRUCTION,
+			Literal: "To the empty &{wok}, add {butter}(60 g) (heat until melted), once melted add the plain {flour}(30g) and mix until golden for t{3 minutes}.",
+		},
+		{
+			Kind:    token.INSTRUCTION,
+			Literal: "Roast for t{20 minutes}, then mix it and roast for another t{20 minutes}.",
+		},
+	})
+
+	expected := []string{
+		"Next, add curry powder and garam masala - cook for 1 minute.",
+		"To the wok add red pepper, chilli, garlic and sweet corn - cook for another 4 minutes.",
+		"To the empty wok, add butter (heat until melted), once melted add the plain flour and mix until golden for 3 minutes.",
+		"Roast for 20 minutes, then mix it and roast for another 20 minutes.",
+	}
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	recipe, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(recipe.Instructions) != len(expected) {
+		t.Fatalf("Expected %d instructions, got %d", len(expected), len(recipe.Instructions))
+	}
+
+	for i, instr := range recipe.Instructions {
+		if instr != expected[i] {
+			t.Errorf("Instruction %d mismatch:\nGot:      %q\nExpected: %q", i, instr, expected[i])
+		}
+	}
+
+	if !reflect.DeepEqual(recipe.Instructions, expected) {
+		t.Errorf("Instructions do not match:\nGot:      %+v\nExpected: %+v", recipe.Instructions, expected)
+	}
+}
+
 func TestIngredients(t *testing.T) {
 	p, err := New([]token.Token{
 		{
@@ -79,7 +149,6 @@ func TestIngredients(t *testing.T) {
 		},
 	})
 
-	//map[butter:{60 g butter} curry powder:{2 tbsp curry powder} flour:{30 g flour} sweet corn:{160 g sweet corn}]
 	tests := []struct {
 		key      string
 		expected *ingredient

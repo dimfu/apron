@@ -16,12 +16,13 @@ type Parser struct {
 }
 
 type Recipe struct {
-	Name         string
-	Metadata     map[string]string
-	Ingredients  map[string]ingredient
-	Materials    map[string]bool
-	Timer        []string
-	Instructions []string
+	Name            string
+	Metadata        map[string]string
+	Ingredients     map[string]ingredient
+	Materials       map[string]bool
+	Timer           []string
+	rawInstructions []string
+	Instructions    []string
 }
 
 type ingredient struct {
@@ -35,20 +36,39 @@ func New(tokens []token.Token) (*Parser, error) {
 	}
 	return &Parser{
 		Recipe: Recipe{
-			Name:         "",
-			Metadata:     map[string]string{},
-			Ingredients:  map[string]ingredient{},
-			Materials:    map[string]bool{},
-			Timer:        []string{},
-			Instructions: []string{},
+			Name:            "",
+			Metadata:        map[string]string{},
+			Ingredients:     map[string]ingredient{},
+			Materials:       map[string]bool{},
+			Timer:           []string{},
+			rawInstructions: []string{},
 		},
 		tokens: tokens,
 	}, nil
 }
-func (p *Parser) parseInstructions() {
+
+func (p *Parser) Display() {
+	fmt.Println(p.Recipe.Metadata["name"])
+	fmt.Println("\nIngredients")
+	maxWidth := 20
+
+	for _, ingredient := range p.Recipe.Ingredients {
+		fmt.Printf("  %-*s %s\n", maxWidth, ingredient.rest, ingredient.amount)
+	}
+
+	fmt.Println("\nInstructions")
+	for _, step := range p.Recipe.Instructions {
+		fmt.Println(step)
+	}
+
+}
+
+func (p *Parser) extractFromTokens() {
 	for _, t := range p.tokens {
 		if t.Kind == token.INSTRUCTION {
-			p.Recipe.Instructions = append(p.Recipe.Instructions, t.Literal)
+			p.Recipe.rawInstructions = append(p.Recipe.rawInstructions, t.Literal)
+		} else if strings.HasPrefix(string(t.Kind), "META_") {
+			p.Recipe.Metadata[string(t.Kind)] = t.Literal
 		}
 	}
 }
@@ -90,9 +110,11 @@ func parseAmount(str string) (*ingredient, error) {
 }
 
 // look for possible ingredient, material, timer property inside instruction string
-func (p *Parser) processInstructions(input string) error {
+func (p *Parser) processInstructions(input string) (string, error) {
+	var sanitizedInstruction string
 	for i := 0; i < len(input); i++ {
 		if input[i] != '{' && !(i > 0 && (input[i-1] == '&' || input[i-1] == 't') && input[i] == '{') {
+			sanitizedInstruction += string(input[i])
 			continue
 		}
 
@@ -100,7 +122,6 @@ func (p *Parser) processInstructions(input string) error {
 		if i > 0 && (input[i-1] == '&' || input[i-1] == 't') {
 			prefix = input[i-1]
 		}
-
 		// get string after prefix and before postfix
 		element := p.getEnclosedString(input, &i, "}")
 
@@ -109,17 +130,25 @@ func (p *Parser) processInstructions(input string) error {
 			unitAmount := p.getEnclosedString(input, &i, ")")
 			ingredient, err := parseAmount(fmt.Sprintf("%s %s", unitAmount, element))
 			if err != nil {
-				return err
+				return "", err
 			}
 
 			// TODO: should it ensure there is no duplicate for the same ingredient element?
 			if _, exists := p.Recipe.Ingredients[element]; !exists {
 				p.Recipe.Ingredients[element] = *ingredient
 			}
+		} else if prefix == '&' || prefix == 't' {
+			sanitizedText := sanitizedInstruction
+			if len(sanitizedText) > 0 {
+				sanitizedInstruction = sanitizedInstruction[0 : len(sanitizedText)-1]
+			}
 		}
+
+		i--
+		sanitizedInstruction += element
 		p.classifyElement(prefix, element)
 	}
-	return nil
+	return sanitizedInstruction, nil
 }
 
 // get string inside brackets from instruction
@@ -142,12 +171,14 @@ func (p *Parser) classifyElement(prefix byte, element string) {
 }
 
 func (p *Parser) Parse() (*Recipe, error) {
-	p.parseInstructions()
+	p.extractFromTokens()
 
-	for _, input := range p.Recipe.Instructions {
-		if err := p.processInstructions(input); err != nil {
+	for _, input := range p.Recipe.rawInstructions {
+		sanitizedInput, err := p.processInstructions(input)
+		if err != nil {
 			return nil, err
 		}
+		p.Recipe.Instructions = append(p.Recipe.Instructions, sanitizedInput)
 	}
 
 	return &p.Recipe, nil

@@ -9,11 +9,11 @@ type Token struct {
 
 const (
 	// METADATA
-	NAME     = "Name"
-	TAGS     = "Tags"
-	SERVINGS = "Servings"
+	NAME     = "META_NAME"
+	TAGS     = "META_TAGS"
+	SERVINGS = "META_SERVINGS"
 
-	INSTRUCTION = "Instruction"
+	INSTRUCTION = "INSTRUCTION"
 )
 
 var Keywords = map[string]Kind{

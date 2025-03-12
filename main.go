@@ -52,5 +52,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(p)
+
+	_, err = p.Parse()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(p.Recipe.Instructions)
+
+	p.Display()
 }
