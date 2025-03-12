@@ -78,7 +78,7 @@ func (s *Scanner) next() error {
 			s.advance()
 		}
 
-		input := string(s.source[s.start+1 : s.current-1])
+		input := string(s.source[s.start+1 : s.current])
 		stack := []rune{}
 		for _, c := range input {
 			if c == '(' || c == '{' {

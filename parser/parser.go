@@ -144,7 +144,7 @@ func (p *Parser) processInstructions(input string) (string, error) {
 			}
 		}
 
-		i--
+		i-- // move i to the closing parentheses
 		sanitizedInstruction += element
 		p.classifyElement(prefix, element)
 	}

@@ -58,7 +58,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(p.Recipe.Instructions)
-
 	p.Display()
 }
