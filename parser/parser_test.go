@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -19,12 +18,10 @@ func TestParseMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	recipe, err := p.Parse()
+	_, err = p.Parse()
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	fmt.Println(recipe.Metadata)
 }
 
 func TestParseAmount(t *testing.T) {
@@ -159,29 +156,29 @@ func TestIngredients(t *testing.T) {
 		{
 			key: "butter",
 			expected: &ingredient{
-				amount: "60",
-				rest:   "g butter",
+				amount: "60 g",
+				rest:   "butter",
 			},
 		},
 		{
 			key: "curry powder",
 			expected: &ingredient{
-				amount: "2",
-				rest:   "tbsp curry powder",
+				amount: "2 tbsp",
+				rest:   "curry powder",
 			},
 		},
 		{
 			key: "flour",
 			expected: &ingredient{
-				amount: "30",
-				rest:   "g flour",
+				amount: "30 g",
+				rest:   "flour",
 			},
 		},
 		{
 			key: "sweet corn",
 			expected: &ingredient{
-				amount: "160",
-				rest:   "g sweet corn",
+				amount: "160 g",
+				rest:   "sweet corn",
 			},
 		},
 	}
@@ -197,10 +194,10 @@ func TestIngredients(t *testing.T) {
 	for _, test := range tests {
 		ingredient, exists := recipe.Ingredients[test.key]
 		if !exists {
-			t.Fatalf("ingredient key %s should be exist in map", test.key)
+			t.Errorf("ingredient key %s should be exist in map", test.key)
 		}
 		if !reflect.DeepEqual(ingredient, *test.expected) {
-			t.Fatalf("ingredient %v should be %v", ingredient, test.expected)
+			t.Errorf("ingredient %v should be %v", ingredient, *test.expected)
 		}
 	}
 }
