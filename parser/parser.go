@@ -48,7 +48,7 @@ func New(tokens []token.Token) (*Parser, error) {
 }
 
 func (p *Parser) Display() {
-	fmt.Println(p.Recipe.Metadata["name"])
+	fmt.Println(p.Recipe.Metadata[token.NAME])
 	fmt.Println("\nIngredients:")
 	maxWidth := 20
 
@@ -68,7 +68,7 @@ func (p *Parser) extractFromTokens() {
 		if t.Kind == token.INSTRUCTION {
 			p.Recipe.rawInstructions = append(p.Recipe.rawInstructions, t.Literal)
 		} else if strings.HasPrefix(string(t.Kind), "META_") {
-			p.Recipe.Metadata[string(t.Kind)] = t.Literal
+			p.Recipe.Metadata[string(t.Kind)] = strings.TrimLeft(t.Literal, " ")
 		}
 	}
 }
