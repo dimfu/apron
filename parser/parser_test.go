@@ -29,37 +29,37 @@ func TestParseMetadata(t *testing.T) {
 
 func TestParseAmount(t *testing.T) {
 	tests := []struct {
-		amounts  string
+		amounts  []string
 		expected *ingredient
 		hasError bool
 	}{
 		{
-			amounts:  "20g chocolate",
-			expected: &ingredient{amount: "20", rest: "g chocolate"},
+			amounts:  []string{"20g", "chocolate"},
+			expected: &ingredient{amount: "20 g", rest: "chocolate"},
 			hasError: false,
 		},
 		{
-			amounts:  "chocolate 20g",
+			amounts:  []string{"chocolate", "20g"},
 			expected: nil,
 			hasError: true,
 		},
 		{
-			amounts:  "20 g chocolate",
-			expected: &ingredient{amount: "20", rest: "g chocolate"},
+			amounts:  []string{"20 g", "chocolate"},
+			expected: &ingredient{amount: "20 g", rest: "chocolate"},
 			hasError: false,
 		},
 		{
-			amounts:  "1.2g chocolate",
-			expected: &ingredient{amount: "1.2", rest: "g chocolate"},
+			amounts:  []string{"1.2 g", "chocolate"},
+			expected: &ingredient{amount: "1.2 g", rest: "chocolate"},
 			hasError: false,
 		},
 		{
-			amounts:  ".5g of water",
-			expected: &ingredient{amount: ".5", rest: "g of water"},
+			amounts:  []string{".5g", "of water"},
+			expected: &ingredient{amount: ".5 g", rest: "of water"},
 			hasError: false,
 		},
 		{
-			amounts:  "..5g of water",
+			amounts:  []string{"..5g", "of water"},
 			expected: nil,
 			hasError: true,
 		},
@@ -69,14 +69,17 @@ func TestParseAmount(t *testing.T) {
 		res, err := parseAmount(test.amounts)
 		if test.hasError {
 			if err == nil {
-				t.Fatalf("expected error for input %s, but got none", test.amounts)
+				t.Errorf("expected error for input %s, but got none", test.amounts)
 			}
 		} else {
 			if err != nil {
-				t.Fatalf("unexpected error for input %s: %v", test.amounts, err)
+				t.Errorf("unexpected error for input %s: %v", test.amounts, err)
 			}
-			if !reflect.DeepEqual(res, test.expected) {
-				t.Fatalf("%v should be %v", res, test.expected)
+			if res.amount != test.expected.amount {
+				t.Errorf("amount '%v' should be '%v'", res.amount, test.expected.amount)
+			}
+			if res.rest != test.expected.rest {
+				t.Errorf("rest '%v' should be '%v'", res.rest, test.expected.rest)
 			}
 		}
 

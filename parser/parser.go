@@ -49,16 +49,16 @@ func New(tokens []token.Token) (*Parser, error) {
 
 func (p *Parser) Display() {
 	fmt.Println(p.Recipe.Metadata["name"])
-	fmt.Println("\nIngredients")
+	fmt.Println("\nIngredients:")
 	maxWidth := 20
 
 	for _, ingredient := range p.Recipe.Ingredients {
 		fmt.Printf("  %-*s %s\n", maxWidth, ingredient.rest, ingredient.amount)
 	}
 
-	fmt.Println("\nInstructions")
+	fmt.Println("\nInstructions:")
 	for _, step := range p.Recipe.Instructions {
-		fmt.Println(step)
+		fmt.Printf("  %-*s\n", maxWidth, step)
 	}
 
 }
@@ -73,20 +73,27 @@ func (p *Parser) extractFromTokens() {
 	}
 }
 
-func parseAmount(str string) (*ingredient, error) {
+func parseAmount(elements []string) (*ingredient, error) {
+	if len(elements) < 2 {
+		return nil, errors.New("invalid input: expected at least two elements")
+	}
 	var (
 		found  bool
 		digits []rune
 		unit   []rune
 	)
 
-	for _, c := range str {
+	for _, c := range elements[0] {
 		if unicode.IsDigit(c) || c == '.' || c == '/' {
 			digits = append(digits, c)
 			found = true
 		} else {
 			if !found {
 				return nil, errors.New("expecting quantity value before unit")
+			}
+			// only add empty space at the first index that is not an empty space
+			if len(unit) == 0 && c != ' ' {
+				unit = append(unit, ' ')
 			}
 			unit = append(unit, c)
 		}
@@ -100,12 +107,11 @@ func parseAmount(str string) (*ingredient, error) {
 	if _, err := strconv.ParseFloat(strings.Replace(digitStr, "/", ".", 1), 64); err != nil {
 		return nil, errors.New("invalid quantity format")
 	}
-
-	trimmedUnit := strings.TrimLeft(string(unit), " ")
+	digitStr += fmt.Sprintf("%s", string(unit)) // add the unit after the amount digit
 
 	return &ingredient{
 		amount: digitStr,
-		rest:   trimmedUnit,
+		rest:   elements[1],
 	}, nil
 }
 
@@ -128,7 +134,7 @@ func (p *Parser) processInstructions(input string) (string, error) {
 		// collect unit amount if the syntax provide parameter after the {} syntax
 		if !(prefix == '&' || prefix == 't') && i < len(input) && input[i] == '(' {
 			unitAmount := p.getEnclosedString(input, &i, ")")
-			ingredient, err := parseAmount(fmt.Sprintf("%s %s", unitAmount, element))
+			ingredient, err := parseAmount([]string{unitAmount, element})
 			if err != nil {
 				return "", err
 			}
@@ -178,7 +184,7 @@ func (p *Parser) Parse() (*Recipe, error) {
 		if err != nil {
 			return nil, err
 		}
-		p.Recipe.Instructions = append(p.Recipe.Instructions, sanitizedInput)
+		p.Recipe.Instructions = append(p.Recipe.Instructions, strings.TrimLeft(sanitizedInput, " "))
 	}
 
 	return &p.Recipe, nil
