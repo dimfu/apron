@@ -60,10 +60,14 @@ func (s *Scanner) next() error {
 			}
 		} else if s.match('*') {
 			for !s.isAtEnd() {
+				if s.peek() == '\n' {
+					s.line++
+				}
+
 				if s.peek() == '*' && s.peekNext() == '/' {
 					s.advance()
 					s.advance()
-					break
+					return nil
 				}
 				s.advance()
 			}
@@ -141,7 +145,7 @@ func (s *Scanner) metadata() error {
 		Literal: parts[1],
 	})
 
-	s.current = newlineIdx + 1
+	s.current = newlineIdx
 	return nil
 }
 
