@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/dimfu/apron/token"
+	"github.com/fatih/color"
 )
 
 type Parser struct {
@@ -49,14 +50,17 @@ func New(tokens []token.Token) (*Parser, error) {
 
 func (p *Parser) Display() {
 	fmt.Println(p.Recipe.Metadata[token.NAME])
-	fmt.Println("\nIngredients:")
+	color.New(color.Underline).Println("\nIngredients:")
 	maxWidth := 20
 
 	for _, ingredient := range p.Recipe.Ingredients {
-		fmt.Printf("  %-*s %s\n", maxWidth, ingredient.rest, ingredient.amount)
+		paddedText := fmt.Sprintf("%-*s", maxWidth, ingredient.rest)
+		coloredText := color.New(color.FgBlue).Sprint(paddedText)
+
+		fmt.Printf("  %s %s\n", coloredText, ingredient.amount)
 	}
 
-	fmt.Println("\nInstructions:")
+	color.New(color.Underline).Println("\nInstructions:")
 	for _, step := range p.Recipe.Instructions {
 		fmt.Printf("  %-*s\n", maxWidth, step)
 	}
@@ -128,11 +132,13 @@ func (p *Parser) processInstructions(input string) (string, error) {
 		if i > 0 && (input[i-1] == '&' || input[i-1] == 't') {
 			prefix = input[i-1]
 		}
+
 		// get string after prefix and before postfix
 		element := p.getEnclosedString(input, &i, "}")
 
 		// collect unit amount if the syntax provide parameter after the {} syntax
 		if !(prefix == '&' || prefix == 't') && i < len(input) && input[i] == '(' {
+			element = color.New(color.FgBlue).Sprintf(element)
 			unitAmount := p.getEnclosedString(input, &i, ")")
 			ingredient, err := parseAmount([]string{unitAmount, element})
 			if err != nil {
@@ -144,6 +150,14 @@ func (p *Parser) processInstructions(input string) (string, error) {
 				p.Recipe.Ingredients[element] = *ingredient
 			}
 		} else if prefix == '&' || prefix == 't' {
+			if prefix == '&' {
+				element = color.New(color.FgYellow).Sprintf(element)
+			}
+
+			if prefix == 't' {
+				element = color.New(color.FgMagenta).Sprintf(element)
+			}
+
 			sanitizedText := sanitizedInstruction
 			if len(sanitizedText) > 0 {
 				sanitizedInstruction = sanitizedInstruction[0 : len(sanitizedText)-1]
